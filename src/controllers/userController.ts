@@ -1,18 +1,51 @@
-import { defaultState } from "@/constants/state";
-import { eventController } from "@/env";
-import { LocationPoint, LocationType } from "@/types/location";
-import { IUserController, UserId, UserState } from "@/types/user";
-import { isLocationValid, isPointsListValid } from "@/validations/state";
+import { defaultUserState } from "@/constants/state";
+import { ContentNode, WithPicture } from "@/types/content";
+import { IUser } from "@/types/controllers";
+import { Events } from "@/types/event";
+import { UserData, UserId, UserState, UserStatus } from "@/types/user";
+import { EventController } from "./eventController";
 
-export class User implements IUserController {
+export class User implements IUser {
   private state: UserState;
 
+  public event: EventController;
+
   public constructor(id: UserId) {
-    this.state = {id, ...defaultState};
+    this.state = {...defaultUserState, id};
+    this.event = new EventController(id);
+
+    this.event.on(Events.prevStep, () => this.prevStep());
+    this.event.on(Events.nextStep, () => this.nextStep());
   }
 
-  public getState = (): UserState => {
-    return {...this.state};
+  public id = (): UserId => {
+    return this.state.id;
+  };
+
+  public getStatus = (): UserStatus => {
+    return this.state.status;
+  };
+
+  public setStatus = (status: UserStatus): void => {
+    this.state.status = status;
+  };
+
+  public getData = (): UserData => {
+    return this.state.data;
+  };
+
+  public setData = (data: UserData): void => {
+    this.state.data = data;
+  };
+
+  public getCurrentContent = (): ContentNode & Partial<WithPicture> => {
+    const currentStep = this.state.data.step;
+
+    if(currentStep >= this.state.data.content.length) {
+      throw new Error(`Cannot handle step: ${currentStep}, too few data!`);
+    }
+
+    return this.state.data.content[currentStep];
   };
 
   public nextStep = (): void => {
@@ -20,10 +53,9 @@ export class User implements IUserController {
       throw new Error("Location points list was not provided!");
     }
 
-    this.state.step += 1;
-
-    if(this.isLastStep()) {
-      eventController.emit(this.state.id, "end");
+    if(this.state.data.step !== this.state.data.content.length - 1) {
+      this.state.data.step += 1;
+      this.event.emit(Events.changeStep);
     }
   };
 
@@ -32,39 +64,21 @@ export class User implements IUserController {
       throw new Error("Location points list was not provided!");
     }
 
-    if(this.state.step !== 0) {
-      this.state.step -= 1;
+    if(this.state.data.step !== 0) {
+      this.state.data.step -= 1;
+      this.event.emit(Events.changeStep);
     }
   };
 
-  public setLocation = (updatedLocation: LocationType): void => {
-    if(!isLocationValid(updatedLocation)) {
-      throw new Error("Location is not valid!");
-    }
-
-    this.state.location = updatedLocation;
+  public isFirstStep = (): boolean => {
+    return this.state.data.step === 0;
   };
 
-  public setPointsList = (updatedPointsList: LocationPoint[]): void => {
-    if(!isPointsListValid(updatedPointsList)) {
-      throw new Error("Location is not valid!");
-    }
-
-    this.state.locationPoints = updatedPointsList;
-  };
-
-  public resetState = (): void => {
-    this.state = {
-      id: this.state.id,
-      ...defaultState,
-    };
-  };
-
-  private isLastStep = (): boolean => {
-    return this.state.step === this.state.locationPoints.length - 1;
+  public isLastStep = (): boolean => {
+    return this.state.data.step === this.state.data.content.length - 1;
   };
 
   private isPointsListSet = (): boolean => {
-    return this.state.locationPoints.length !== 0;
+    return this.state.data.content.length !== 0;
   };
 }

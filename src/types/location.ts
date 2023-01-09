@@ -1,16 +1,10 @@
-import { locations } from "@/env";
-import { Imaginable, LocationLabelProp, LocationValueProp } from "./general";
+import { Image, LocationLabelProp } from "./common";
+import { ContentNode, WithLinks, WithPicture } from "./content";
 
-export interface LocationType extends Imaginable {
-  value: LocationValueProp,
-  label: LocationLabelProp,
-}
+export type LocationsList =
+  | "street"
+  | "building1";
 
-export type LocationList = Record<keyof typeof locations, LocationType>;
+export interface Location extends ContentNode, Partial<WithLinks>, Partial<WithPicture> {}
 
-export type LocationPoint = {
-  name: string,
-  description: string,
-  picture: string
-  links: string[]
-}
+export type LocationImage = Image<LocationsList, LocationLabelProp>;

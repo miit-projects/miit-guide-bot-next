@@ -1,15 +1,19 @@
-import { Keyboard } from "@/constants/buttons";
-import { locationLabels, locationValues } from "@/constants/locations";
-import { LocationPoint, LocationType } from "@/types/location";
+import { KeyboardButtons } from "@/constants/buttons";
+import { locationsImage } from "@/env";
+import { ContentNode } from "@/types/content";
+import { LocationImage } from "@/types/location";
+import { getObjectPropArray } from "@/utils/common";
 
-export const isLocationValid = (candidate: LocationType): boolean => {
-  return (locationLabels.includes(candidate.label)) && (locationValues.includes(candidate.value));
+export const isValidLocation = (candidate: LocationImage): boolean => {
+  return (getObjectPropArray(Object.values(locationsImage), "label").includes(candidate.label))
+      && (getObjectPropArray(Object.values(locationsImage), "value").includes(candidate.value));
 };
 
-export const isPointsListValid = (candidate: LocationPoint[]): boolean => {
+export const isValidContentList = (candidate: ContentNode[]): boolean => {
   return (candidate.length > 0);
 };
 
 export const isValidControlButton = (candidate: string) => {
-  return Object.keys(Keyboard).includes(candidate);
+  return Object.values(KeyboardButtons).map(button => button.label).includes(candidate)
+      || Object.keys(KeyboardButtons).includes(candidate);
 };
